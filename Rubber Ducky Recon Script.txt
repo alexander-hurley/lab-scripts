@@ -1,6 +1,6 @@
 #REM	DUCKY RECON SCRIPT
 #REM	Hack Something 1 - Group 6
-#REM	Alexander Hurley, Wyatt Turner, Kheera Venner, Dean Orchard, Alexander Yan
+#REM	Alexander Hurley
 #REM
 #REM    The purpose of this script is to highlight some capabilities of the Rubber Ducky and is not 
 #REM    designed to show a best practice for stealth and speed. It is simply designed for demonstration 

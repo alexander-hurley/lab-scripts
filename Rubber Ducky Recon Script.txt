@@ -2,6 +2,10 @@
 #REM	Hack Something 1 - Group 6
 #REM	Alexander Hurley, Wyatt Turner, Kheera Venner, Dean Orchard, Alexander Yan
 #REM
+#REM  The purpose of this script is to highlight some capabilities of the Rubber Ducky and is not 
+#REM  designed to show a best practice for stealth and speed. It is simply designed for demonstration 
+#REM  purposes.
+#REM
 #REM	This script performs recon on a target system & domain, while trying to minimize its run time.
 #REM
 #REM	Speed is key for a script like this as the script will not execute correctly if a user clicks 

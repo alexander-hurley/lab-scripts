@@ -2,6 +2,8 @@
 #REM	Hack Something 1 - Group 6
 #REM	Alexander Hurley
 #REM
+#REM    Must be compiled into a proper inject.bin file before it can be executed.
+#REM
 #REM    The purpose of this script is to highlight some capabilities of the Rubber Ducky and is not 
 #REM    designed to show a best practice for stealth and speed. It is simply designed for demonstration 
 #REM    purposes.
